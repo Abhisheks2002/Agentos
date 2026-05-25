@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # API Server
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://agentos:agentos@postgres:5432/agentos
+      - REDIS_URL=redis://redis:6379
+      - CHROMA_PERSIST=/data/chroma
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - chroma_data:/data
+    command: uvicorn core.api.server:app --host 0.0.0.0 --port 8000
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=agentos
+      - POSTGRES_PASSWORD=agentos
+      - POSTGRES_DB=agentos
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # ChromaDB Vector Database
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data:

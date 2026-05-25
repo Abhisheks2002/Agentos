@@ -1,0 +1,45 @@
+{
+  "name": "AgentOS",
+  "version": "1.0.0",
+  "description": "Governance layer between AI Agents and Host Operating Systems",
+  "tiers": {
+    "startup": {
+      "name": "Startup",
+      "maxAgents": 5,
+      "maxWorkflows": 10,
+      "maxStorage": "1GB",
+      "features": ["basic_workflows", "email_support"],
+      "price": "Free"
+    },
+    "business": {
+      "name": "Business",
+      "maxAgents": 25,
+      "maxWorkflows": 100,
+      "maxStorage": "50GB",
+      "features": ["advanced_workflows", "api_access", "priority_support", "custom_integrations"],
+      "price": "$99/month"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "maxAgents": -1,
+      "maxWorkflows": -1,
+      "maxStorage": "Unlimited",
+      "features": ["unlimited_all", "dedicated_support", "sla_guarantee", "on_prem_deployment", "audit_compliance", "sso_integration"],
+      "price": "Custom"
+    }
+  },
+  "permissions": {
+    "system": ["read_system_info", "file_read", "file_write", "execute_commands", "network_access"],
+    "data": ["read_user_data", "write_user_data", "read_business_data", "write_business_data"],
+    "admin": ["manage_agents", "manage_users", "view_audit_logs", "configure_policies"]
+  },
+  "governance": {
+    "require_approval_for": ["file_write", "execute_commands", "network_access"],
+    "auto_block": ["delete_system_files", "modify_registry", "install_software"],
+    "rate_limits": {
+      "api_calls_per_minute": 1000,
+      "file_operations_per_hour": 500,
+      "network_requests_per_hour": 1000
+    }
+  }
+}

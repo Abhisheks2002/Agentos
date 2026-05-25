@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentOS - AI Agent Governance Platform</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0f; color: #fff; min-height: 100vh; }
+
+    /* Login Screen */
+    #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%); }
+    .login-container { background: #12121a; padding: 40px; border-radius: 16px; border: 1px solid #2a2a3a; text-align: center; max-width: 400px; width: 90%; }
+    .login-logo { font-size: 48px; margin-bottom: 10px; }
+    .login-title { font-size: 32px; font-weight: 700; margin-bottom: 8px; background: linear-gradient(90deg, #00d4ff, #7b2ff7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .login-subtitle { color: #888; margin-bottom: 30px; }
+
+    .tier-selector { display: flex; gap: 10px; margin-bottom: 30px; justify-content: center; flex-wrap: wrap; }
+    .tier-btn { padding: 12px 20px; border: 2px solid #2a2a3a; background: #1a1a2a; border-radius: 8px; cursor: pointer; color: #fff; transition: all 0.3s; }
+    .tier-btn:hover, .tier-btn.active { border-color: #00d4ff; background: #1a2a3a; }
+    .tier-btn.enterprise { border-color: #7b2ff7; }
+    .tier-btn.enterprise:hover, .tier-btn.enterprise.active { background: #2a1a3a; }
+
+    .login-input { width: 100%; padding: 14px; margin-bottom: 15px; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 8px; color: #fff; font-size: 14px; }
+    .login-input:focus { outline: none; border-color: #00d4ff; }
+
+    .login-btn { width: 100%; padding: 14px; background: linear-gradient(90deg, #00d4ff, #7b2ff7); border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+    .login-btn:hover { transform: scale(1.02); }
+
+    /* Dashboard */
+    #dashboard { display: none; }
+    .dashboard-header { background: #12121a; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2a3a; position: sticky; top: 0; z-index: 100; }
+    .header-left { display: flex; align-items: center; gap: 15px; }
+    .logo { font-size: 24px; }
+    .org-badge { background: #2a2a3a; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #00d4ff; }
+    .header-right { display: flex; align-items: center; gap: 20px; }
+    .user-info { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(90deg, #00d4ff, #7b2ff7); display: flex; align-items: center; justify-content: center; font-weight: 600; }
+    .logout-btn { background: transparent; border: 1px solid #ff4757; color: #ff4757; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+
+    .dashboard-nav { background: #0f0f18; padding: 15px 30px; display: flex; gap: 10px; border-bottom: 1px solid #2a2a3a; }
+    .nav-btn { padding: 10px 20px; background: transparent; border: none; color: #888; cursor: pointer; border-radius: 6px; transition: all 0.3s; }
+    .nav-btn:hover, .nav-btn.active { background: #1a1a2a; color: #fff; }
+
+    .dashboard-content { padding: 30px; }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* Stats Cards */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .stat-card { background: #12121a; border-radius: 12px; padding: 24px; border: 1px solid #2a2a3a; }
+    .stat-card h3 { color: #888; font-size: 14px; font-weight: 500; margin-bottom: 10px; }
+    .stat-card .value { font-size: 36px; font-weight: 700; }
+    .stat-card .change { font-size: 14px; margin-top: 8px; }
+    .stat-card .change.positive { color: #2ed573; }
+    .stat-card .change.negative { color: #ff4757; }
+
+    /* Agent Cards */
+    .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+    .agent-card { background: #12121a; border-radius: 12px; padding: 20px; border: 1px solid #2a2a3a; }
+    .agent-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .agent-name { font-size: 18px; font-weight: 600; }
+    .agent-type { font-size: 12px; color: #888; }
+    .agent-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+    .agent-stat { background: #0a0a0f; padding: 10px; border-radius: 6px; text-align: center; }
+    .agent-stat-value { font-size: 20px; font-weight: 600; }
+    .agent-stat-label { font-size: 11px; color: #888; }
+    .agent-actions { display: flex; gap: 10px; }
+
+    .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+    .status-badge.active { background: #1a3a2a; color: #2ed573; }
+    .status-badge.paused { background: #3a3a1a; color: #ffa502; }
+    .status-badge.error { background: #3a1a1a; color: #ff4757; }
+    .status-badge.idle { background: #2a2a3a; color: #888; }
+
+    .action-btn { padding: 6px 12px; background: #2a2a3a; border: none; border-radius: 4px; color: #fff; cursor: pointer; font-size: 12px; }
+    .action-btn:hover { background: #3a3a4a; }
+    .action-btn.danger { background: #3a1a1a; color: #ff4757; }
+
+    /* Workflow */
+    .workflow-builder { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+    .workflow-sidebar { background: #12121a; border-radius: 12px; padding: 20px; border: 1px solid #2a2a3a; }
+    .sidebar-title { font-size: 14px; font-weight: 600; margin-bottom: 15px; color: #888; }
+    .workflow-node { background: #1a1a2a; padding: 12px; border-radius: 8px; margin-bottom: 10px; cursor: grab; border: 1px solid #2a2a3a; }
+    .workflow-node:hover { border-color: #00d4ff; }
+    .workflow-canvas { background: #12121a; border-radius: 12px; padding: 20px; border: 1px solid #2a2a3a; min-height: 500px; }
+
+    /* Permissions */
+    .permission-grid { display: grid; gap: 10px; }
+    .permission-row { display: grid; grid-template-columns: 200px 1fr 100px; gap: 15px; align-items: center; background: #12121a; padding: 15px; border-radius: 8px; border: 1px solid #2a2a3a; }
+    .permission-name { font-weight: 500; }
+    .permission-desc { color: #888; font-size: 13px; }
+    .toggle { width: 50px; height: 26px; background: #2a2a3a; border-radius: 13px; cursor: pointer; position: relative; transition: background 0.3s; }
+    .toggle.active { background: #00d4ff; }
+    .toggle::after { content: ''; width: 22px; height: 22px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: left 0.3s; }
+    .toggle.active::after { left: 26px; }
+
+    /* Audit */
+    .audit-filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-select { padding: 8px 12px; background: #12121a; border: 1px solid #2a2a3a; border-radius: 6px; color: #fff; }
+    .audit-entry { background: #12121a; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #2a2a3a; }
+    .audit-entry.warning { border-left-color: #ffa502; }
+    .audit-entry.blocked { border-left-color: #ff4757; }
+    .audit-entry.allowed { border-left-color: #2ed573; }
+    .audit-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .audit-time { color: #888; font-size: 12px; }
+    .audit-agent { color: #00d4ff; font-size: 12px; }
+    .audit-action { font-weight: 500; }
+    .audit-details { color: #888; font-size: 13px; }
+
+    /* Modal */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: #12121a; border-radius: 16px; padding: 30px; max-width: 600px; width: 90%; border: 1px solid #2a2a3a; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-title { font-size: 24px; font-weight: 600; }
+    .modal-close { background: none; border: none; color: #888; font-size: 24px; cursor: pointer; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 8px; color: #fff; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; }
+    .btn-primary { background: #00d4ff; color: #000; }
+    .btn-secondary { background: #2a2a3a; color: #fff; }
+
+    /* Governance */
+    .governance-section { background: #12121a; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #2a2a3a; }
+    .governance-title { font-size: 18px; font-weight: 600; margin-bottom: 15px; }
+    .governance-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #0a0a0f; border-radius: 8px; margin-bottom: 10px; }
+    .rate-bar { width: 200px; height: 8px; background: #2a2a3a; border-radius: 4px; overflow: hidden; }
+    .rate-fill { height: 100%; background: linear-gradient(90deg, #00d4ff, #7b2ff7); border-radius: 4px; }
+
+    /* System Status */
+    .system-status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+    .status-item { background: #12121a; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #2a2a3a; }
+    .status-icon { font-size: 24px; margin-bottom: 8px; }
+    .status-label { font-size: 12px; color: #888; }
+    .status-value { font-weight: 600; }
+
+    .btn-add { padding: 12px 24px; background: linear-gradient(90deg, #00d4ff, #7b2ff7); border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+    /* Chat Interface - Day 4 */
+    .chat-container { display: none; position: fixed; bottom: 80px; right: 30px; width: 420px; height: 600px; background: #12121a; border-radius: 16px; border: 1px solid #2a2a3a; box-shadow: 0 10px 40px rgba(0,0,0,0.5); flex-direction: column; overflow: hidden; z-index: 1000; }
+    .chat-container.active { display: flex; }
+    .chat-header { background: linear-gradient(135deg, #1a1a2e 0%, #12121a 100%); padding: 16px 20px; border-bottom: 1px solid #2a2a3a; display: flex; justify-content: space-between; align-items: center; }
+    .chat-header-title { display: flex; align-items: center; gap: 10px; }
+    .chat-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(90deg, #00d4ff, #7b2ff7); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .chat-title { font-weight: 600; font-size: 16px; }
+    .chat-subtitle { font-size: 12px; color: #888; }
+    .chat-controls { display: flex; gap: 8px; }
+    .chat-control-btn { background: transparent; border: none; color: #888; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.3s; font-size: 16px; }
+    .chat-control-btn:hover { background: #2a2a3a; color: #fff; }
+    .chat-control-btn.active { background: #00d4ff20; color: #00d4ff; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .chat-message { display: flex; gap: 12px; max-width: 90%; }
+    .chat-message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .message-avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .message-avatar.ai { background: linear-gradient(90deg, #00d4ff, #7b2ff7); }
+    .message-avatar.user { background: #2a2a3a; }
+    .message-bubble { padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; word-wrap: break-word; }
+    .chat-message.ai .message-bubble { background: #1a1a2a; border-bottom-left-radius: 4px; }
+    .chat-message.user .message-bubble { background: #00d4ff; color: #000; border-bottom-right-radius: 4px; }
+    .message-time { font-size: 10px; color: #666; margin-top: 4px; }
+    .chat-message.user .message-time { text-align: right; }
+    .typing-indicator { display: flex; gap: 4px; padding: 12px 16px; background: #1a1a2a; border-radius: 16px; border-bottom-left-radius: 4px; width: fit-content; }
+    .typing-dot { width: 8px; height: 8px; background: #666; border-radius: 50%; animation: typing 1.4s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    .chat-input-container { padding: 16px; border-top: 1px solid #2a2a3a; display: flex; gap: 10px; align-items: flex-end; }
+    .chat-input-wrapper { flex: 1; position: relative; }
+    .chat-input { width: 100%; padding: 12px 16px; padding-right: 40px; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 24px; color: #fff; font-size: 14px; resize: none; max-height: 100px; }
+    .chat-input:focus { outline: none; border-color: #00d4ff; }
+    .chat-send-btn { width: 44px; height: 44px; background: linear-gradient(90deg, #00d4ff, #7b2ff7); border: none; border-radius: 50%; color: #fff; cursor: pointer; font-size: 18px; transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }
+    .chat-send-btn:hover { transform: scale(1.05); }
+    .chat-send-btn:disabled { background: #2a2a3a; cursor: not-allowed; }
+    .voice-btn { width: 44px; height: 44px; background: #2a2a3a; border: none; border-radius: 50%; color: #fff; cursor: pointer; font-size: 18px; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+    .voice-btn:hover { background: #3a3a4a; }
+    .voice-btn.listening { background: #ff4757; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,71,87,0.4); } 50% { box-shadow: 0 0 0 10px rgba(255,71,87,0); } }
+    .voice-btn.speaking { background: #00d4ff; }
+
+    /* Tool Panel - Day 4 */
+    .tool-panel { display: none; position: fixed; left: 30px; top: 150px; width: 320px; max-height: 500px; background: #12121a; border-radius: 12px; border: 1px solid #2a2a3a; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 999; overflow: hidden; }
+    .tool-panel.active { display: block; }
+    .tool-panel-header { background: #1a1a2e; padding: 14px 16px; border-bottom: 1px solid #2a2a3a; display: flex; justify-content: space-between; align-items: center; }
+    .tool-panel-title { font-weight: 600; font-size: 14px; }
+    .tool-panel-close { background: none; border: none; color: #888; cursor: pointer; font-size: 18px; }
+    .tool-search { padding: 12px; border-bottom: 1px solid #2a2a3a; }
+    .tool-search input { width: 100%; padding: 8px 12px; background: #0a0a0f; border: 1px solid #2a2a3a; border-radius: 6px; color: #fff; font-size: 13px; }
+    .tool-list { max-height: 350px; overflow-y: auto; }
+    .tool-item { padding: 12px 16px; border-bottom: 1px solid #1a1a2a; cursor: pointer; transition: background 0.2s; }
+    .tool-item:hover { background: #1a1a2a; }
+    .tool-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .tool-name { font-weight: 500; font-size: 13px; }
+    .tool-category { font-size: 11px; color: #00d4ff; background: #00d4ff20; padding: 2px 8px; border-radius: 10px; }
+    .tool-desc { font-size: 12px; color: #888; }
+    .tool-invocations { padding: 16px; border-top: 1px solid #2a2a3a; max-height: 200px; overflow-y: auto; }
+    .tool-invocation { background: #0a0a0f; padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #00d4ff; }
+    .tool-invocation-name { font-size: 12px; font-weight: 500; color: #00d4ff; }
+    .tool-invocation-status { font-size: 11px; color: #888; }
+    .tool-invocation-result { font-size: 11px; color: #aaa; margin-top: 4px; font-family: monospace; background: #12121a; padding: 6px; border-radius: 4px; max-height: 60px; overflow-y: auto; }
+
+    /* Stream Response */
+    .stream-cursor { display: inline-block; width: 2px; height: 16px; background: #00d4ff; margin-left: 2px; animation: blink 0.8s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* Chat FAB */
+    .chat-fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #00d4ff, #7b2ff7); border: none; border-radius: 50%; color: #fff; font-size: 24px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,212,255,0.4); transition: transform 0.3s, box-shadow 0.3s; z-index: 999; display: flex; align-items: center; justify-content: center; }
+    .chat-fab:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(0,212,255,0.6); }
+    .chat-fab.hidden { display: none; }
+
+    /* Day 5 - Dashboard & Reporting */
+    .exec-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+    .exec-stat-card { background: #12121a; border-radius: 12px; padding: 24px; border: 1px solid #2a2a3a; position: relative; overflow: hidden; }
+    .exec-stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+    .exec-stat-card.blue::before { background: #00d4ff; }
+    .exec-stat-card.green::before { background: #2ed573; }
+    .exec-stat-card.purple::before { background: #7b2ff7; }
+    .exec-stat-card.orange::before { background: #ffa502; }
+    .exec-stat-card .label { color: #888; font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .exec-stat-card .value { font-size: 42px; font-weight: 700; margin-bottom: 8px; }
+    .exec-stat-card .trend { font-size: 13px; display: flex; align-items: center; gap: 6px; }
+    .exec-stat-card .trend.up { color: #2ed573; }
+    .exec-stat-card .trend.down { color: #ff4757; }
+    .exec-stat-card .trend.neutral { color: #888; }
+
+    .compliance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+    .compliance-card { background: #12121a; border-radius: 12px; padding: 20px; border: 1px solid #2a2a3a; }
+    .compliance-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .compliance-title { font-weight: 600; }
+    .compliance-score { font-size: 32px; font-weight: 700; }
+    .compliance-score.good { color: #2ed573; }
+    .compliance-score.warning { color: #ffa502; }
+    .compliance-score.bad { color: #ff4757; }
+    .compliance-bar { height: 8px; background: #2a2a3a; border-radius: 4px; overflow: hidden; margin-top: 10px; }
+    .compliance-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+    .compliance-fill.good { background: #2ed573; }
+    .compliance-fill.warning { background: #ffa502; }
+    .compliance-fill.bad { background: #ff4757; }
+
+    .health-score { display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 30px; }
+    .health-gauge { width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(#2ed573 var(--health, 0%), #2a2a3a 0%); display: flex; align-items: center; justify-content: center; position: relative; }
+    .health-gauge-inner { width: 110px; height: 110px; border-radius: 50%; background: #12121a; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+    .health-value { font-size: 36px; font-weight: 700; }
+    .health-label { font-size: 12px; color: #888; }
+
+    .chart-container { background: #12121a; border-radius: 12px; padding: 20px; border: 1px solid #2a2a3a; margin-bottom: 20px; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .chart-title { font-weight: 600; font-size: 16px; }
+    .chart-legend { display: flex; gap: 20px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .chart-area { height: 200px; position: relative; }
+    .chart-area canvas { width: 100%; height: 100%; }
+
+    .analytics-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .analytics-sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+    .metric-card { background: #12121a; border-radius: 12px; padding: 20px; border: 1px solid #2a2a3a; }
+    .metric-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .metric-title { font-weight: 600; font-size: 14px; color: #888; }
+    .metric-value { font-size: 28px; font-weight: 700; margin-bottom: 5px; }
+    .metric-change { font-size: 12px; }
+    .metric-change.positive { color: #2ed573; }
+    .metric-change.negative { color: #ff4757; }
+    .metric-sparkline { height: 40px; margin-top: 10px; display: flex; align-items: flex-end; gap: 3px; }
+    .spark-bar { flex: 1; background: #00d4ff; border-radius: 2px; min-width: 4px; opacity: 0.7; }
+
+    .alert-list { max-height: 300px; overflow-y: auto; }
+    .alert-item { padding: 12px; background: #0a0a0f; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid; display: flex; justify-content: space-between; align-items: center; }
+    .alert-item.critical { border-left-color: #ff4757; }
+    .alert-item.warning { border-left-color: #ffa502; }
+    .alert-item.info { border-left-color: #00d4ff; }
+    .alert-content { flex: 1; }
+    .alert-title { font-weight: 500; font-size: 13px; margin-bottom: 4px; }
+    .alert-desc { font-size: 12px; color: #888; }
+    .alert-time { font-size: 11px; color: #666; }
+
+    .report-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px; }
+    .report-card { background: #12121a; border-radius: 12px; padding: 24px; border: 1px solid #2a2a3a; cursor: pointer; transition: all 0.3s; }
+    .report-card:hover { border-color: #00d4ff; transform: translateY(-2px); }
+    .report-icon { width: 50px; height: 50px; border-radius: 12px; background: linear-gradient(135deg, #00d4ff20, #7b2ff720); display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 15px; }
+    .report-title { font-weight: 600; font-size: 16px; margin-bottom: 8px; }
+    .report-desc { font-size: 13px; color: #888; margin-bottom: 15px; }
+    .report-meta { display: flex; justify-content: space-between; font-size: 12px; color: #666; }
+
+    .report-filters { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .report-type-btns { display: flex; gap: 8px; }
+    .report-type-btn { padding: 8px 16px; background: #1a1a2a; border: 1px solid #2a2a3a; border-radius: 6px; color: #888; cursor: pointer; transition: all 0.3s; font-size: 13px; }
+    .report-type-btn:hover, .report-type-btn.active { background: #00d4ff20; border-color: #00d4ff; color: #00d4ff; }
+    .export-btns { display: flex; gap: 8px; }
+    .export-btn { padding: 8px 16px; background: #2a2a3a; border: none; border-radius: 6px; color: #fff; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+    .export-btn:hover { background: #3a3a4a; }
+
+    .notification-panel { position: fixed; top: 80px; right: 20px; width: 380px; max-height: 500px; background: #12121a; border-radius: 12px; border: 1px solid #2a2a3a; box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 998; display: none; overflow: hidden; }
+    .notification-panel.active { display: block; }
+    .notification-header { padding: 16px 20px; border-bottom: 1px solid #2a2a3a; display: flex; justify-content: space-between; align-items: center; background: #1a1a2e; }
+    .notification-title { font-weight: 600; }
+    .notification-count { background: #00d4ff; color: #000; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+    .notification-tabs { display: flex; border-bottom: 1px solid #2a2a3a; }
+    .notification-tab { flex: 1; padding: 12px; text-align: center; background: transparent; border: none; color: #888; cursor: pointer; font-size: 13px; }
+    .notification-tab:hover, .notification-tab.active { color: #00d4ff; background: #00d4ff10; }
+    .notification-list { max-height: 350px; overflow-y: auto; }
+    .notification-item { padding: 14px 16px; border-bottom: 1px solid #1a1a2a; cursor: pointer; transition: background 0.2s; display: flex; gap: 12px; }
+    .notification-item:hover { background: #1a1a2a; }
+    .notification-item.unread { background: #00d4ff08; }
+    .notification-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .notification-icon.security { background: #ff475720; }
+    .notification-icon.workflow { background: #7b2ff720; }
+    .notification-icon.agent { background: #00d4ff20; }
+    .notification-icon.system { background: #ffa50220; }
+    .notification-body { flex: 1; min-width: 0; }
+    .notification-text { font-size: 13px; margin-bottom: 4px; line-height: 1.4; }
+    .notification-text strong { color: #00d4ff; }
+    .notification-time { font-size: 11px; color: #666; }
+    .notification-empty { padding: 40px; text-align: center; color: #888; }
+
+    .notif-badge { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: #ff4757; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+
+    .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .quick-action { padding: 10px 16px; background: #1a1a2a; border: 1px solid #2a2a3a; border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; transition: all 0.3s; }
+    .quick-action:hover { background: #2a2a3a; border-color: #00d4ff; }
+    .quick-action-icon { font-size: 16px; }
+
+    .real-time-indicator { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #2ed573; }
+    .pulse-dot { width: 8px; height: 8px; background: #2ed573; border-radius: 50%; animation: pulse-green 2s infinite; }
+    @keyframes pulse-green { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46,213,115,0.4); } 50% { opacity: 0.8; box-shadow: 0 0 0 8px rgba(46,213,115,0); } }
+
+    .dashboard-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: #0a0a0f; padding: 4px; border-radius: 8px; width: fit-content; }
+    .dashboard-tab { padding: 10px 20px; background: transparent; border: none; color: #888; cursor: pointer; border-radius: 6px; font-size: 14px; transition: all 0.3s; }
+    .dashboard-tab:hover, .dashboard-tab.active { background: #12121a; color: #fff; }
+
+    .operational-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .activity-feed { max-height: 400px; overflow-y: auto; }
+    .activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #1a1a2a; }
+    .activity-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .activity-icon.success { background: #2ed57320; }
+    .activity-icon.warning { background: #ffa50220; }
+    .activity-icon.error { background: #ff475720; }
+    .activity-icon.info { background: #00d4ff20; }
+    .activity-content { flex: 1; }
+    .activity-title { font-size: 13px; margin-bottom: 4px; }
+    .activity-meta { font-size: 11px; color: #666; }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="login-screen">
+    <div class="login-container">
+      <div class="login-logo">⚡</div>
+      <h1 class="login-title">AgentOS</h1>
+      <p class="login-subtitle">AI Agent Governance Platform</p>
+
+      <div class="tier-selector">
+        <button class="tier-btn startup active" onclick="selectTier('startup')">Startup</button>
+        <button class="tier-btn business" onclick="selectTier('business')">Business</button>
+        <button class="tier-btn enterprise" onclick="selectTier('enterprise')">Enterprise</button>
+      </div>
+
+      <input type="text" class="login-input" placeholder="Organization Name" id="orgName">
+      <input type="email" class="login-input" placeholder="Email Address">
+      <input type="password" class="login-input" placeholder="Password">
+
+      <button class="login-btn" onclick="simpleLogin()">Launch AgentOS</button>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <header class="dashboard-header">
+      <div class="header-left">
+        <span class="logo">⚡</span>
+        <span class="org-badge" id="orgBadge">Startup Tier</span>
+      </div>
+      <div class="header-right">
+        <div class="system-status">
+          <div class="status-item"><div class="status-icon">🟢</div><div class="status-label">OS Bridge</div></div>
+          <div class="status-item"><div class="status-icon">🟢</div><div class="status-label">Governance</div></div>
+          <div class="status-item"><div class="status-icon">🟢</div><div class="status-label">Audit</div></div>
+          <div class="status-item"><div class="status-icon">🟢</div><div class="status-label">API</div></div>
+        </div>
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <span id="userName">Admin</span>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+      </div>
+    </header>
+
+    <nav class="dashboard-nav">
+      <button class="nav-btn active" onclick="showSection('overview')">Overview</button>
+      <button class="nav-btn" onclick="showSection('executive')">Executive</button>
+      <button class="nav-btn" onclick="showSection('operations')">Operations</button>
+      <button class="nav-btn" onclick="showSection('analytics')">Analytics</button>
+      <button class="nav-btn" onclick="showSection('reports')">Reports</button>
+      <button class="nav-btn" onclick="showSection('agents')">Agents</button>
+      <button class="nav-btn" onclick="showSection('workflows')">Workflows</button>
+      <button class="nav-btn" onclick="showSection('permissions')">Permissions</button>
+      <button class="nav-btn" onclick="showSection('governance')">Governance</button>
+      <button class="nav-btn" onclick="showSection('audit')">Audit Log</button>
+      <button class="nav-btn" style="margin-left: auto; position: relative;" onclick="toggleNotifications()">
+        <span id="notifIcon">🔔</span>
+        <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
+      </button>
+    </nav>
+
+    <div class="dashboard-content">
+      <!-- Overview -->
+      <section id="overview" class="section active">
+        <h2 style="margin-bottom: 20px;">System Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Active Agents</h3><div class="value" id="statAgents">0</div><div class="change positive">Running</div></div>
+          <div class="stat-card"><h3>Workflows Running</h3><div class="value" id="statWorkflows">0</div><div class="change positive">Active</div></div>
+          <div class="stat-card"><h3>API Calls Today</h3><div class="value" id="statApiCalls">0</div><div class="change positive">This session</div></div>
+          <div class="stat-card"><h3>Blocked Actions</h3><div class="value" id="statBlocked">0</div><div class="change negative">Protected</div></div>
+        </div>
+        <div class="governance-section"><h3 class="governance-title">Real-time Activity</h3><p style="color:#888;">Agent activity chart will appear here</p></div>
+      </section>
+
+      <!-- Executive Dashboard (Day 5) -->
+      <section id="executive" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h2>Executive Dashboard</h2>
+          <div class="real-time-indicator"><span class="pulse-dot"></span>Live Data</div>
+        </div>
+
+        <div class="exec-stats-grid">
+          <div class="exec-stat-card blue">
+            <div class="label">Active Agents</div>
+            <div class="value" id="execActiveAgents">3</div>
+            <div class="trend up">↑ 12% from last week</div>
+          </div>
+          <div class="exec-stat-card green">
+            <div class="label">Workflows Completed</div>
+            <div class="value" id="execWorkflows">47</div>
+            <div class="trend up">↑ 23% from last week</div>
+          </div>
+          <div class="exec-stat-card purple">
+            <div class="label">Pending Approvals</div>
+            <div class="value" id="execApprovals">5</div>
+            <div class="trend neutral">→ Same as yesterday</div>
+          </div>
+          <div class="exec-stat-card orange">
+            <div class="label">Blocked Actions</div>
+            <div class="value" id="execBlocked">12</div>
+            <div class="trend down">↓ 8% from last week</div>
+          </div>
+        </div>
+
+        <div class="compliance-grid">
+          <div class="compliance-card">
+            <div class="compliance-header">
+              <span class="compliance-title">Security Compliance</span>
+            </div>
+            <div class="compliance-score good" id="securityScore">94%</div>
+            <p style="color:#888;font-size:13px;margin-bottom:10px;">All security policies enforced</p>
+            <div class="compliance-bar"><div class="compliance-fill good" style="width:94%"></div></div>
+          </div>
+          <div class="compliance-card">
+            <div class="compliance-header">
+              <span class="compliance-title">Audit Compliance</span>
+            </div>
+            <div class="compliance-score good" id="auditScore">98%</div>
+            <p style="color:#888;font-size:13px;margin-bottom:10px;">All actions logged</p>
+            <div class="compliance-bar"><div class="compliance-fill good" style="width:98%"></div></div>
+          </div>
+          <div class="compliance-card health-score">
+            <div class="compliance-title" style="margin-bottom:20px;">Organization Health</div>
+            <div class="health-gauge" style="--health:87%">
+              <div class="health-gauge-inner">
+                <div class="health-value" style="color:#2ed573;">87</div>
+                <div class="health-label">Health Score</div>
+              </div>
+            </div>
+            <p style="color:#888;font-size:13px;margin-top:15px;">Excellent overall performance</p>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-header">
+            <span class="chart-title">API Calls Over Time</span>
+            <div class="chart-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#00d4ff"></span>API Calls</div>
+              <div class="legend-item"><span class="legend-dot" style="background:#7b2ff7"></span>Blocked</div>
+            </div>
+          </div>
+          <div class="chart-area">
+            <canvas id="execChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Operations Dashboard (Day 5) -->
+      <section id="operations" class="section">
+        <h2 style="margin-bottom:20px;">Operations Dashboard</h2>
+
+        <div class="stats-grid">
+          <div class="stat-card"><h3>Active Agents</h3><div class="value">3</div><div class="change positive">2 running tasks</div></div>
+          <div class="stat-card"><h3>Workflow Status</h3><div class="value">5</div><div class="change positive">2 active</div></div>
+          <div class="stat-card"><h3>Open Alerts</h3><div class="value">3</div><div class="change negative">1 critical</div></div>
+          <div class="stat-card"><h3>Pending Approvals</h3><div class="value">5</div><div class="change neutral">Awaiting review</div></div>
+        </div>
+
+        <div class="operational-grid">
+          <div class="governance-section">
+            <h3 class="governance-title">Real-time Agent Activity</h3>
+            <div class="activity-feed" id="activityFeed">
+              <div class="activity-item">
+                <div class="activity-icon success">✓</div>
+                <div class="activity-content">
+                  <div class="activity-title"><strong>DataProcessor</strong> completed file processing</div>
+                  <div class="activity-meta">Just now • 1.2s execution time</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-icon info">↗</div>
+                <div class="activity-content">
+                  <div class="activity-title"><strong>FileSync</strong> started backup workflow</div>
+                  <div class="activity-meta">2 minutes ago • 247 files queued</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-icon warning">!</div>
+                <div class="activity-content">
+                  <div class="activity-title"><strong>EmailAssistant</strong> rate limit approaching</div>
+                  <div class="activity-meta">5 minutes ago • 45/50 emails sent</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-icon error">✕</div>
+                <div class="activity-content">
+                  <div class="activity-title"><strong>DataProcessor</strong> blocked: dangerous command</div>
+                  <div class="activity-meta">10 minutes ago • rm -rf blocked</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="governance-section">
+            <h3 class="governance-title">Quick Actions</h3>
+            <div class="quick-actions">
+              <button class="quick-action" onclick="openModal('addAgent')"><span class="quick-action-icon">+</span>New Agent</button>
+              <button class="quick-action" onclick="openModal('newWorkflow')"><span class="quick-action-icon">⚡</span>Run Workflow</button>
+              <button class="quick-action"><span class="quick-action-icon">📊</span>View Reports</button>
+              <button class="quick-action"><span class="quick-action-icon">🔒</span>Review Blocked</button>
+            </div>
+
+            <h3 class="governance-title" style="margin-top:25px;">Alert Summary</h3>
+            <div class="alert-list">
+              <div class="alert-item critical">
+                <div class="alert-content">
+                  <div class="alert-title">High API Rate Limit Usage</div>
+                  <div class="alert-desc">Approaching 90% of rate limit</div>
+                </div>
+                <div class="alert-time">5m ago</div>
+              </div>
+              <div class="alert-item warning">
+                <div class="alert-content">
+                  <div class="alert-title">Email Assistant Rate Limit</div>
+                  <div class="alert-desc">45/50 emails sent today</div>
+                </div>
+                <div class="alert-time">10m ago</div>
+              </div>
+              <div class="alert-item info">
+                <div class="alert-content">
+                  <div class="alert-title">Workflow Completed</div>
+                  <div class="alert-desc">Daily Report generated</div>
+                </div>
+                <div class="alert-time">1h ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analytics (Day 5) -->
+      <section id="analytics" class="section">
+        <h2 style="margin-bottom:20px;">Real-Time Analytics</h2>
+
+        <div class="analytics-grid">
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">Performance Metrics</span>
+              <div class="chart-legend">
+                <div class="legend-item"><span class="legend-dot" style="background:#00d4ff"></span>CPU</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#7b2ff7"></span>Memory</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#2ed573"></span>Tasks/sec</div>
+              </div>
+            </div>
+            <div class="chart-area" style="height:250px;">
+              <canvas id="analyticsChart"></canvas>
+            </div>
+          </div>
+
+          <div class="analytics-sidebar">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">API Latency</span>
+              </div>
+              <div class="metric-value" style="color:#00d4ff;">124ms</div>
+              <div class="metric-change positive">↓ 12% faster</div>
+              <div class="metric-sparkline" id="latencySparkline"></div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Success Rate</span>
+              </div>
+              <div class="metric-value" style="color:#2ed573;">99.7%</div>
+              <div class="metric-change positive">↑ 0.3%</div>
+              <div class="metric-sparkline" id="successSparkline"></div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Queue Depth</span>
+              </div>
+              <div class="metric-value" style="color:#ffa502;">8</div>
+              <div class="metric-change negative">↑ 2 pending</div>
+              <div class="metric-sparkline" id="queueSparkline"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Reports (Day 5) -->
+      <section id="reports" class="section">
+        <h2 style="margin-bottom:20px;">Reporting Module</h2>
+
+        <div class="report-filters">
+          <span style="color:#888;font-size:14px;">Report Type:</span>
+          <div class="report-type-btns">
+            <button class="report-type-btn active" onclick="selectReportType('activity')">Agent Activity</button>
+            <button class="report-type-btn" onclick="selectReportType('workflow')">Workflow Performance</button>
+            <button class="report-type-btn" onclick="selectReportType('security')">Security</button>
+            <button class="report-type-btn" onclick="selectReportType('compliance')">Compliance</button>
+          </div>
+          <div style="flex:1"></div>
+          <div class="export-btns">
+            <button class="export-btn" onclick="exportReport('pdf')">📄 PDF</button>
+            <button class="export-btn" onclick="exportReport('csv')">📊 CSV</button>
+            <button class="export-btn" onclick="exportReport('json')">📋 JSON</button>
+          </div>
+        </div>
+
+        <div class="report-grid">
+          <div class="report-card" onclick="generateReport('daily')">
+            <div class="report-icon">📅</div>
+            <div class="report-title">Daily Report</div>
+            <div class="report-desc">Summary of all agent activities, workflow executions, and security events for the past 24 hours.</div>
+            <div class="report-meta"><span>Last: Today 6:00 AM</span><span>Auto-generated</span></div>
+          </div>
+
+          <div class="report-card" onclick="generateReport('weekly')">
+            <div class="report-icon">📈</div>
+            <div class="report-title">Weekly Report</div>
+            <div class="report-desc">Comprehensive analysis of weekly performance trends, compliance status, and system health.</div>
+            <div class="report-meta"><span>Last: Mon 6:00 AM</span><span>Auto-generated</span></div>
+          </div>
+
+          <div class="report-card" onclick="generateReport('monthly')">
+            <div class="report-icon">📊</div>
+            <div class="report-title">Monthly Report</div>
+            <div class="report-desc">Detailed monthly analytics with trend analysis, cost metrics, and compliance documentation.</div>
+            <div class="report-meta"><span>Last: Mar 1 6:00 AM</span><span>Auto-generated</span></div>
+          </div>
+
+          <div class="report-card" onclick="generateReport('on-demand')">
+            <div class="report-icon">⚡</div>
+            <div class="report-title">On-Demand Report</div>
+            <div class="report-desc">Generate custom report with specific date ranges, agents, and metrics selection.</div>
+            <div class="report-meta"><span>Generate now</span><span>Manual</span></div>
+          </div>
+        </div>
+
+        <div class="governance-section">
+          <h3 class="governance-title">Scheduled Reports</h3>
+          <div id="scheduledReports">
+            <div class="governance-item"><div><div class="permission-name">Daily Agent Activity</div><div class="permission-desc">Every day at 6:00 AM • Email to admin</div></div><div class="toggle active"></div></div>
+            <div class="governance-item"><div><div class="permission-name">Weekly Security Summary</div><div class="permission-desc">Every Monday at 6:00 AM • Email to security team</div></div><div class="toggle active"></div></div>
+            <div class="governance-item"><div><div class="permission-name">Monthly Compliance Report</div><div class="permission-desc">1st of every month • Email to compliance</div></div><div class="toggle active"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Executive Dashboard - Day 5 -->
+      <section id="executive" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div>
+            <h2 style="margin-bottom:5px;">Executive Dashboard</h2>
+            <p style="color:#888;font-size:14px;">Executive summary for leadership</p>
+          </div>
+          <div class="real-time-indicator">
+            <span class="pulse-dot"></span>
+            Live Data
+          </div>
+        </div>
+
+        <div class="exec-stats-grid">
+          <div class="exec-stat-card blue">
+            <div class="label">Active Agents</div>
+            <div class="value" id="execActiveAgents">12</div>
+            <div class="trend up">↑ 8% from last week</div>
+          </div>
+          <div class="exec-stat-card green">
+            <div class="label">Workflows Completed</div>
+            <div class="value" id="execWorkflows">847</div>
+            <div class="trend up">↑ 23% from last week</div>
+          </div>
+          <div class="exec-stat-card purple">
+            <div class="label">Pending Approvals</div>
+            <div class="value" id="execApprovals">5</div>
+            <div class="trend down">↓ 2 from yesterday</div>
+          </div>
+          <div class="exec-stat-card orange">
+            <div class="label">Blocked Actions</div>
+            <div class="value" id="execBlocked">23</div>
+            <div class="trend neutral">Same as yesterday</div>
+          </div>
+        </div>
+
+        <div class="compliance-grid">
+          <div class="compliance-card">
+            <div class="compliance-header">
+              <span class="compliance-title">Security Compliance</span>
+            </div>
+            <div class="compliance-score good" id="secScore">94%</div>
+            <div class="compliance-bar"><div class="compliance-fill good" id="secBar" style="width:94%"></div></div>
+            <div style="margin-top:15px;font-size:12px;color:#888;">Last audit: Today</div>
+          </div>
+          <div class="compliance-card">
+            <div class="compliance-header">
+              <span class="compliance-title">Data Privacy</span>
+            </div>
+            <div class="compliance-score good" id="privacyScore">98%</div>
+            <div class="compliance-bar"><div class="compliance-fill good" id="privacyBar" style="width:98%"></div></div>
+            <div style="margin-top:15px;font-size:12px;color:#888;">Last audit: Today</div>
+          </div>
+          <div class="compliance-card">
+            <div class="compliance-header">
+              <span class="compliance-title">Audit Trail</span>
+            </div>
+            <div class="compliance-score warning" id="auditScore">87%</div>
+            <div class="compliance-bar"><div class="compliance-fill warning" id="auditBar" style="width:87%"></div></div>
+            <div style="margin-top:15px;font-size:12px;color:#888;">3 gaps detected</div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-header">
+            <span class="chart-title">API Calls Over Time</span>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#00d4ff"></div> Today</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#7b2ff7"></div> Yesterday</div>
+            </div>
+          </div>
+          <div class="chart-area">
+            <canvas id="execChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Operations Dashboard - Day 5 -->
+      <section id="operations" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div>
+            <h2 style="margin-bottom:5px;">Operational Dashboard</h2>
+            <p style="color:#888;font-size:14px;">Day-to-day operations monitoring</p>
+          </div>
+          <div class="real-time-indicator">
+            <span class="pulse-dot"></span>
+            Live
+          </div>
+        </div>
+
+        <div class="quick-actions" style="margin-bottom:25px;">
+          <button class="quick-action"><span class="quick-action-icon">▶️</span> Start All Agents</button>
+          <button class="quick-action"><span class="quick-action-icon">⏹️</span> Pause All</button>
+          <button class="quick-action"><span class="quick-action-icon">🔄</span> Refresh Status</button>
+          <button class="quick-action"><span class="quick-action-icon">📊</span> Run Diagnostics</button>
+        </div>
+
+        <div class="operational-grid">
+          <div class="governance-section">
+            <h3 class="governance-title">Active Agents</h3>
+            <div class="activity-feed" id="opsAgentActivity"></div>
+          </div>
+          <div class="governance-section">
+            <h3 class="governance-title">Recent Alerts</h3>
+            <div class="alert-list" id="opsAlerts"></div>
+          </div>
+        </div>
+
+        <div class="governance-section" style="margin-top:20px;">
+          <h3 class="governance-title">Workflow Status Overview</h3>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-top:15px;">
+            <div class="metric-card">
+              <div class="metric-title">Running</div>
+              <div class="metric-value" style="color:#2ed573">8</div>
+              <div class="metric-change positive">Active now</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title">Completed</div>
+              <div class="metric-value" style="color:#00d4ff">156</div>
+              <div class="metric-change positive">+23 today</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title">Failed</div>
+              <div class="metric-value" style="color:#ff4757">3</div>
+              <div class="metric-change negative">Needs attention</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-title">Scheduled</div>
+              <div class="metric-value" style="color:#ffa502">12</div>
+              <div class="metric-change">Next in 5 min</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analytics - Day 5 -->
+      <section id="analytics" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div>
+            <h2 style="margin-bottom:5px;">Real-Time Analytics</h2>
+            <p style="color:#888;font-size:14px;">Performance metrics and trend analysis</p>
+          </div>
+          <div class="real-time-indicator">
+            <span class="pulse-dot"></span>
+            Live Updates
+          </div>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">Agent Performance (CPU %)</span>
+              <select class="filter-select" style="padding:6px 12px;">
+                <option>Last Hour</option>
+                <option>Last 24 Hours</option>
+                <option>Last 7 Days</option>
+              </select>
+            </div>
+            <div class="chart-area">
+              <canvas id="perfChart"></canvas>
+            </div>
+          </div>
+          <div class="analytics-sidebar">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Avg Response Time</span>
+              </div>
+              <div class="metric-value">142ms</div>
+              <div class="metric-change positive">↓ 12ms faster</div>
+              <div class="metric-sparkline">
+                <div class="spark-bar" style="height:60%"></div>
+                <div class="spark-bar" style="height:45%"></div>
+                <div class="spark-bar" style="height:70%"></div>
+                <div class="spark-bar" style="height:55%"></div>
+                <div class="spark-bar" style="height:40%"></div>
+                <div class="spark-bar" style="height:35%"></div>
+                <div class="spark-bar" style="height:30%"></div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Success Rate</span>
+              </div>
+              <div class="metric-value" style="color:#2ed573">99.7%</div>
+              <div class="metric-change positive">↑ 0.2%</div>
+              <div class="metric-sparkline">
+                <div class="spark-bar" style="height:95%"></div>
+                <div class="spark-bar" style="height:92%"></div>
+                <div class="spark-bar" style="height:97%"></div>
+                <div class="spark-bar" style="height:94%"></div>
+                <div class="spark-bar" style="height:98%"></div>
+                <div class="spark-bar" style="height:96%"></div>
+                <div class="spark-bar" style="height:99%"></div>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Memory Usage</span>
+              </div>
+              <div class="metric-value">2.4 GB</div>
+              <div class="metric-change">of 8 GB allocated</div>
+              <div class="compliance-bar" style="margin-top:10px;">
+                <div class="compliance-fill good" style="width:30%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-container" style="margin-top:20px;">
+          <div class="chart-header">
+            <span class="chart-title">API Request Volume</span>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#2ed573"></div> Successful</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#ff4757"></div> Failed</div>
+            </div>
+          </div>
+          <div class="chart-area">
+            <canvas id="apiChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Reports - Day 5 -->
+      <section id="reports" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <div>
+            <h2 style="margin-bottom:5px;">Reporting Module</h2>
+            <p style="color:#888;font-size:14px;">Generate and export reports</p>
+          </div>
+        </div>
+
+        <div class="report-filters">
+          <span style="color:#888;font-size:13px;">Report Type:</span>
+          <div class="report-type-btns">
+            <button class="report-type-btn active" onclick="selectReportType('daily', this)">Daily</button>
+            <button class="report-type-btn" onclick="selectReportType('weekly', this)">Weekly</button>
+            <button class="report-type-btn" onclick="selectReportType('monthly', this)">Monthly</button>
+          </div>
+          <div style="flex:1"></div>
+          <div class="export-btns">
+            <button class="export-btn" onclick="exportReport('pdf')">📄 PDF</button>
+            <button class="export-btn" onclick="exportReport('csv')">📊 CSV</button>
+            <button class="export-btn" onclick="exportReport('json')">📋 JSON</button>
+          </div>
+        </div>
+
+        <div class="report-grid">
+          <div class="report-card" onclick="generateReport('agent')">
+            <div class="report-icon">🤖</div>
+            <div class="report-title">Agent Activity Report</div>
+            <div class="report-desc">Detailed breakdown of agent tasks, performance, and error rates</div>
+            <div class="report-meta">
+              <span>📅 Daily/Weekly/Monthly</span>
+              <span>⏱️ ~2 min generate</span>
+            </div>
+          </div>
+          <div class="report-card" onclick="generateReport('workflow')">
+            <div class="report-icon">🔄</div>
+            <div class="report-title">Workflow Performance</div>
+            <div class="report-desc">Execution times, success rates, and bottleneck analysis</div>
+            <div class="report-meta">
+              <span>📅 Daily/Weekly/Monthly</span>
+              <span>⏱️ ~1 min generate</span>
+            </div>
+          </div>
+          <div class="report-card" onclick="generateReport('security')">
+            <div class="report-icon">🔒</div>
+            <div class="report-title">Security Report</div>
+            <div class="report-desc">Blocked actions, threat detection, and compliance status</div>
+            <div class="report-meta">
+              <span>📅 Weekly/Monthly</span>
+              <span>⏱️ ~3 min generate</span>
+            </div>
+          </div>
+          <div class="report-card" onclick="generateReport('compliance')">
+            <div class="report-icon">✅</div>
+            <div class="report-title">Compliance Report</div>
+            <div class="report-desc">Audit trail completeness, policy violations, and remediation</div>
+            <div class="report-meta">
+              <span>📅 Monthly</span>
+              <span>⏱️ ~5 min generate</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="governance-section">
+          <h3 class="governance-title">Scheduled Reports</h3>
+          <div style="display:grid;gap:10px;margin-top:15px;">
+            <div class="governance-item">
+              <div>
+                <div class="permission-name">Weekly Security Report</div>
+                <div class="permission-desc">Every Monday at 9:00 AM</div>
+              </div>
+              <span class="status-badge active">Active</span>
+            </div>
+            <div class="governance-item">
+              <div>
+                <div class="permission-name">Monthly Compliance Report</div>
+                <div class="permission-desc">1st of every month at 8:00 AM</div>
+              </div>
+              <span class="status-badge active">Active</span>
+            </div>
+            <div class="governance-item">
+              <div>
+                <div class="permission-name">Daily Agent Summary</div>
+                <div class="permission-desc">Every day at 6:00 PM</div>
+              </div>
+              <span class="status-badge paused">Paused</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Agents -->
+      <section id="agents" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h2>AI Agents</h2>
+          <button class="btn-add" onclick="openModal('addAgent')">+ Add Agent</button>
+        </div>
+        <div class="agent-grid" id="agentGrid"></div>
+      </section>
+
+      <!-- Workflows -->
+      <section id="workflows" class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <h2>Workflow Builder</h2>
+          <button class="btn-add" onclick="openModal('newWorkflow')">+ New Workflow</button>
+        </div>
+        <div class="workflow-builder">
+          <div class="workflow-sidebar">
+            <div class="sidebar-title">Workflow Nodes</div>
+            <div class="workflow-node">📥 Trigger</div>
+            <div class="workflow-node">🔍 Condition</div>
+            <div class="workflow-node">⚙️ Action</div>
+            <div class="workflow-node">📧 Notify</div>
+            <div class="workflow-node">🔄 Loop</div>
+            <div class="workflow-node">✅ Approval</div>
+          </div>
+          <div class="workflow-canvas" id="workflowCanvas"><p style="color:#888;text-align:center;margin-top:200px;">Drag nodes here to build workflow</p></div>
+        </div>
+      </section>
+
+      <!-- Permissions -->
+      <section id="permissions" class="section">
+        <h2 style="margin-bottom:20px;">Permission Matrix</h2>
+        <div class="governance-section">
+          <h3 class="governance-title">System Permissions</h3>
+          <div class="permission-grid" id="permissionGrid"></div>
+        </div>
+      </section>
+
+      <!-- Governance -->
+      <section id="governance" class="section">
+        <h2 style="margin-bottom:20px;">Governance Controls</h2>
+        <div class="governance-section">
+          <h3 class="governance-title">Rate Limiting</h3>
+          <div class="governance-item"><div><div class="permission-name">API Calls / Minute</div><div class="permission-desc" id="apiLimitDesc">0 of 1000 used</div></div><div class="rate-bar"><div class="rate-fill" id="apiRateFill" style="width:0%"></div></div></div>
+          <div class="governance-item"><div><div class="permission-name">File Operations / Hour</div><div class="permission-desc">230 of 500 used</div></div><div class="rate-bar"><div class="rate-fill" style="width:46%"></div></div></div>
+        </div>
+        <div class="governance-section">
+          <h3 class="governance-title">Auto-Block Rules</h3>
+          <div class="governance-item"><div><div class="permission-name">Delete System Files</div><div class="permission-desc">Automatically block</div></div><div class="toggle active" onclick="this.classList.toggle('active')"></div><div class="govern</div>
+          ance-item"><div><div class="permission-name">Modify Registry</div><div class="permission-desc">Automatically block</div></div><div class="toggle active" onclick="this.classList.toggle('active')"></div></div>
+          <div class="governance-item"><div><div class="permission-name">Install Software</div><div class="permission-desc">Require approval</div></div><div class="toggle active" onclick="this.classList.toggle('active')"></div></div>
+        </div>
+      </section>
+
+      <!-- Audit -->
+      <section id="audit" class="section">
+        <h2 style="margin-bottom:20px;">Audit Log</h2>
+        <div class="audit-filters">
+          <select class="filter-select"><option>All Actions</option><option>Allowed</option><option>Blocked</option><option>Warning</option></select>
+          <select class="filter-select"><option>All Agents</option><option>DataProcessor</option><option>FileSync</option></select>
+          <select class="filter-select"><option>Last 24 Hours</option><option>Last 7 Days</option></select>
+          <button class="btn-secondary">Export Log</button>
+        </div>
+        <div id="auditLog"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Add Agent Modal -->
+  <div class="modal" id="addAgentModal">
+    <div class="modal-content">
+      <div class="modal-header"><h3 class="modal-title">Add New Agent</h3><button class="modal-close" onclick="closeModal('addAgent')">&times;</button></div>
+      <div class="form-group"><label>Agent Name</label><input type="text" id="newAgentName" placeholder="e.g., DataProcessor"></div>
+      <div class="form-group"><label>Agent Type</label><select id="newAgentType"><option>Data Processing</option><option>File Management</option><option>Communication</option><option>Automation</option><option>Analysis</option></select></div>
+      <div class="form-group"><label>Description</label><textarea id="newAgentDesc" rows="3" placeholder="What does this agent do?"></textarea></div>
+      <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('addAgent')">Cancel</button><button class="btn btn-primary" onclick="handleAddAgent()">Create Agent</button></div>
+    </div>
+  </div>
+
+  <!-- New Workflow Modal -->
+  <div class="modal" id="newWorkflowModal">
+    <div class="modal-content">
+      <div class="modal-header"><h3 class="modal-title">Create New Workflow</h3><button class="modal-close" onclick="closeModal('newWorkflow')">&times;</button></div>
+      <div class="form-group"><label>Workflow Name</label><input type="text" id="newWorkflowName" placeholder="e.g., Daily Report"></div>
+      <div class="form-group"><label>Description</label><textarea id="newWorkflowDesc" rows="3" placeholder="What does this workflow do?"></textarea></div>
+      <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('newWorkflow')">Cancel</button><button class="btn btn-primary" onclick="handleAddWorkflow()">Create Workflow</button></div>
+    </div>
+  </div>
+
+  <!-- Notification Panel - Day 5 -->
+  <div class="notification-panel" id="notificationPanel">
+    <div class="notification-header">
+      <span class="notification-title">Notifications</span>
+      <span class="notification-count" id="notifCount">3</span>
+    </div>
+    <div class="notification-tabs">
+      <button class="notification-tab active" onclick="filterNotifications('all', this)">All</button>
+      <button class="notification-tab" onclick="filterNotifications('security', this)">Security</button>
+      <button class="notification-tab" onclick="filterNotifications('workflow', this)">Workflow</button>
+    </div>
+    <div class="notification-list" id="notificationList"></div>
+  </div>
+
+  <script>
+    // Day 5 State
+    var notifications = [];
+    var reportType = 'daily';
+    var notifFilter = 'all';
+
+    // Notification Data - Day 5
+    notifications = [
+      { id: 1, type: 'security', icon: '🔒', title: '<strong>DataProcessor</strong> attempted to delete system file', time: '2 min ago', unread: true },
+      { id: 2, type: 'workflow', icon: '🔄', title: 'Workflow <strong>Daily Backup</strong> completed successfully', time: '15 min ago', unread: true },
+      { id: 3, type: 'agent', icon: '🤖', title: '<strong>EmailAssistant</strong> became idle', time: '1 hour ago', unread: true },
+      { id: 4, type: 'system', icon: '⚡', title: 'Rate limit at 85% - consider increasing', time: '2 hours ago', unread: false },
+      { id: 5, type: 'workflow', icon: '⚠️', title: 'Workflow <strong>Data Sync</strong> failed', time: '3 hours ago', unread: false },
+      { id: 6, type: 'security', icon: '✅', title: 'Security scan completed - No threats', time: '5 hours ago', unread: false }
+    ];
+
+    // State
+    var currentTier = 'startup';
+    var currentOrg = '';
+    var agents = [];
+    var workflows = [];
+    var auditLogs = [];
+    var stats = { agents: { active: 0 }, workflows: { running: 0 }, blocked: 0, apiCalls: 0 };
+
+    // Day 5 Functions
+    function toggleNotifications() {
+      var panel = document.getElementById('notificationPanel');
+      panel.classList.toggle('active');
+      if (panel.classList.contains('active')) {
+        renderNotifications();
+      }
+    }
+
+    function renderNotifications() {
+      var list = document.getElementById('notificationList');
+      var filtered = notifFilter === 'all' ? notifications : notifications.filter(function(n) { return n.type === notifFilter; });
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="notification-empty">No notifications</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < filtered.length; i++) {
+        var n = filtered[i];
+        html += '<div class="notification-item ' + (n.unread ? 'unread' : '') + '" onclick="markAsRead(' + n.id + ')">' +
+          '<div class="notification-icon ' + n.type + '">' + n.icon + '</div>' +
+          '<div class="notification-body">' +
+          '<div class="notification-text">' + n.title + '</div>' +
+          '<div class="notification-time">' + n.time + '</div>' +
+          '</div></div>';
+      }
+      list.innerHTML = html;
+
+      // Update count
+      var unreadCount = notifications.filter(function(n) { return n.unread; }).length;
+      var badge = document.getElementById('notifBadge');
+      var navBadge = document.getElementById('notifBadge');
+      if (badge) badge.textContent = unreadCount;
+      if (navBadge) {
+        navBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+        navBadge.textContent = unreadCount;
+      }
+    }
+
+    function markAsRead(id) {
+      for (var i = 0; i < notifications.length; i++) {
+        if (notifications[i].id === id) {
+          notifications[i].unread = false;
+        }
+      }
+      renderNotifications();
+    }
+
+    function filterNotifications(type, btn) {
+      notifFilter = type;
+      document.querySelectorAll('.notification-tab').forEach(function(t) { t.classList.remove('active'); });
+      btn.classList.add('active');
+      renderNotifications();
+    }
+
+    function selectReportType(type, btn) {
+      reportType = type;
+      document.querySelectorAll('.report-type-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    }
+
+    function generateReport(type) {
+      var typeName = { agent: 'Agent Activity', workflow: 'Workflow Performance', security: 'Security', compliance: 'Compliance' };
+      alert('Generating ' + typeName[type] + ' Report (' + reportType + ')...\n\nThis would generate a ' + reportType + ' ' + typeName[type].toLowerCase() + ' report with data from the selected period.');
+    }
+
+    function exportReport(format) {
+      alert('Exporting report as ' + format.toUpperCase() + '...\n\nThis would download the current report in ' + format.toUpperCase() + ' format.');
+    }
+
+    // Initialize Day 5 data
+    function initDay5() {
+      renderNotifications();
+      renderOpsData();
+    }
+
+    function renderOpsData() {
+      // Render operational agent activity
+      var agentActivity = document.getElementById('opsAgentActivity');
+      if (agentActivity) {
+        agentActivity.innerHTML =
+          '<div class="activity-item"><div class="activity-icon success">✓</div><div class="activity-content"><div class="activity-title">DataProcessor completed task #1248</div><div class="activity-meta">2 min ago</div></div></div>' +
+          '<div class="activity-item"><div class="activity-icon info">→</div><div class="activity-content"><div class="activity-title">FileSync started file transfer</div><div class="activity-meta">5 min ago</div></div></div>' +
+          '<div class="activity-item"><div class="activity-icon success">✓</div><div class="activity-content"><div class="activity-title">EmailAssistant sent 12 emails</div><div class="activity-meta">10 min ago</div></div></div>' +
+          '<div class="activity-item"><div class="activity-icon warning">⚠</div><div class="activity-content"><div class="activity-title">AnalyticsBot high memory usage</div><div class="activity-meta">15 min ago</div></div></div>' +
+          '<div class="activity-item"><div class="activity-icon success">✓</div><div class="activity-content"><div class="activity-title">BackupAgent completed backup</div><div class="activity-meta">30 min ago</div></div></div>';
+      }
+
+      // Render alerts
+      var alerts = document.getElementById('opsAlerts');
+      if (alerts) {
+        alerts.innerHTML =
+          '<div class="alert-item warning"><div class="alert-content"><div class="alert-title">High Memory Usage</div><div class="alert-desc">AnalyticsBot at 85% memory</div></div><div class="alert-time">10m</div></div>' +
+          '<div class="alert-item critical"><div class="alert-content"><div class="alert-title">Workflow Failed</div><div class="alert-desc">Data Sync workflow error</div></div><div class="alert-time">1h</div></div>' +
+          '<div class="alert-item info"><div class="alert-content"><div class="alert-title">Rate Limit Warning</div><div class="alert-desc">85% of API limit used</div></div><div class="alert-time">2h</div></div>' +
+          '<div class="alert-item warning"><div class="alert-content"><div class="alert-title">Agent Idle</div><div class="alert-desc">EmailAssistant idle for 1 hour</div></div><div class="alert-time">3h</div></div>';
+      }
+    }
+
+    // Login
+    function selectTier(tier) {
+      currentTier = tier;
+      document.querySelectorAll('.tier-btn').forEach(function(btn) { btn.classList.remove('active'); });
+      document.querySelector('.tier-btn.' + tier).classList.add('active');
+    }
+
+    function simpleLogin() {
+      // Simple login - works with any credentials
+      var orgName = document.getElementById('orgName').value || 'AgentOS';
+
+      // Update header
+      document.getElementById('orgBadge').textContent = orgName + ' - ' + currentTier.charAt(0).toUpperCase() + currentTier.slice(1);
+      document.getElementById('userName').textContent = orgName;
+      document.getElementById('userAvatar').textContent = orgName.charAt(0).toUpperCase();
+
+      // Hide login, show dashboard
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+
+      // Load data
+      loadData();
+      initDay5();
+
+      console.log('AgentOS logged in successfully');
+    }
+
+    function handleLogin() {
+      try {
+        var orgName = document.getElementById('orgName').value;
+        if (!orgName || orgName.trim() === '') {
+          orgName = 'DemoOrg'; // Auto-fill for quick access
+        }
+        currentOrg = orgName.toLowerCase().replace(/\s+/g, '_');
+
+        // Update UI - with safety checks
+        var orgBadge = document.getElementById('orgBadge');
+        var userName = document.getElementById('userName');
+        var userAvatar = document.getElementById('userAvatar');
+
+        if (orgBadge) orgBadge.textContent = orgName + ' - ' + currentTier.charAt(0).toUpperCase() + currentTier.slice(1);
+        if (userName) userName.textContent = orgName;
+        if (userAvatar) userAvatar.textContent = orgName.charAt(0).toUpperCase();
+
+        // Show dashboard
+        var loginScreen = document.getElementById('login-screen');
+        var dashboard = document.getElementById('dashboard');
+        if (loginScreen) loginScreen.style.display = 'none';
+        if (dashboard) dashboard.style.display = 'block';
+
+        // Load demo data
+        loadData();
+        initDay5();
+
+        console.log('AgentOS logged in successfully');
+      } catch (e) {
+        console.error('Login error:', e);
+        alert('Login successful! Dashboard may have some loading issues.');
+        // Still show dashboard even if there's an error
+        var loginScreen = document.getElementById('login-screen');
+        var dashboard = document.getElementById('dashboard');
+        if (loginScreen) loginScreen.style.display = 'none';
+        if (dashboard) dashboard.style.display = 'block';
+        loadData();
+        initDay5();
+      }
+
+      // Close notification panel when clicking outside
+      document.addEventListener('click', function(e) {
+        var panel = document.getElementById('notificationPanel');
+        var btn = document.querySelector('.nav-btn[onclick*="toggleNotifications"]');
+        if (panel && panel.classList.contains('active') && !panel.contains(e.target) && (!btn || !btn.contains(e.target))) {
+          panel.classList.remove('active');
+        }
+      });
+    }
+
+    // Simple login - works with any credentials
+    function simpleLogin() {
+      var orgName = document.getElementById('orgName').value || 'DemoOrg';
+      currentOrg = orgName.toLowerCase().replace(/\s+/g, '_');
+
+      // Update UI
+      var orgBadge = document.getElementById('orgBadge');
+      var userName = document.getElementById('userName');
+      var userAvatar = document.getElementById('userAvatar');
+
+      if (orgBadge) orgBadge.textContent = orgName + ' - ' + currentTier.charAt(0).toUpperCase() + currentTier.slice(1);
+      if (userName) userName.textContent = orgName;
+      if (userAvatar) userAvatar.textContent = orgName.charAt(0).toUpperCase();
+
+      // Show dashboard
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+
+      // Load data
+      loadData();
+      initDay5();
+    }
+
+    function handleLogin() {
+      simpleLogin();
+    }
+
+    function handleLogout() {
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'flex';
+    }
+
+    // Navigation
+    function showSection(sectionId, evt) {
+      document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+      document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.getElementById(sectionId).classList.add('active');
+      if (evt && evt.target) {
+        evt.target.classList.add('active');
+      }
+    }
+
+    // Data
+    function loadData() {
+      try {
+        agents = [
+          { id: '1', name: 'DataProcessor', type: 'Data Processing', status: 'active', tasksCompleted: 1247, errors: 3, lastActivity: new Date().toISOString() },
+          { id: '2', name: 'FileSync', type: 'File Management', status: 'active', tasksCompleted: 892, errors: 0, lastActivity: new Date().toISOString() },
+          { id: '3', name: 'EmailAssistant', type: 'Communication', status: 'idle', tasksCompleted: 456, errors: 2, lastActivity: new Date().toISOString() }
+        ];
+
+        workflows = [
+          { id: 'wf1', name: 'Daily Report', description: 'Generate daily reports', status: 'draft', runs: 5 },
+          { id: 'wf2', name: 'File Backup', description: 'Backup important files', status: 'active', runs: 12 }
+        ];
+
+        auditLogs = [
+          { timestamp: new Date().toISOString(), agentId: 'DataProcessor', action: 'file_read', details: '/data/reports/finance.csv', status: 'allowed' },
+          { timestamp: new Date().toISOString(), agentId: 'FileSync', action: 'file_write', details: '/backup/doc.docx', status: 'allowed' },
+          { timestamp: new Date().toISOString(), agentId: 'DataProcessor', action: 'execute_command', details: 'rm -rf', status: 'blocked', reason: 'Dangerous command blocked' }
+        ];
+
+        stats = { agents: { active: 2 },
+        workflows: { running: 1 },
+        blocked: 1,
+        apiCalls: 156
+      };
+
+        renderAgents();
+        renderWorkflows();
+        renderAuditLog();
+        renderPermissions();
+        updateStats();
+      } catch (e) {
+        console.error('Error loading data:', e);
+      }
+    }
+
+    // Render
+    function renderAgents() {
+      var grid = document.getElementById('agentGrid');
+      if (agents.length === 0) {
+        grid.innerHTML = '<p style="color:#888;grid-column:1/-1;text-align:center;padding:40px;">No agents yet. Click "Add Agent" to create one.</p>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < agents.length; i++) {
+        var a = agents[i];
+        html += '<div class="agent-card"><div class="agent-header"><div><div class="agent-name">' + a.name + '</div><div class="agent-type">' + a.type + '</div></div><span class="status-badge ' + a.status + '">' + a.status + '</span></div><div class="agent-stats"><div class="agent-stat"><div class="agent-stat-value">' + a.tasksCompleted + '</div><div class="agent-stat-label">Tasks</div></div><div class="agent-stat"><div class="agent-stat-value">' + a.errors + '</div><div class="agent-stat-label">Errors</div></div></div><div style="color:#888;font-size:12px;margin-bottom:15px;">Last run: ' + (a.lastActivity ? new Date(a.lastActivity).toLocaleString() : 'Never') + '</div><div class="agent-actions"><button class="action-btn" onclick="toggleAgent(\'' + a.id + '\')">' + (a.status === 'active' ? 'Pause' : 'Start') + '</button><button class="action-btn" onclick="viewAgentLogs(\'' + a.id + '\')">Logs</button><button class="action-btn danger" onclick="deleteAgent(\'' + a.id + '\')">Delete</button></div></div>';
+      }
+      grid.innerHTML = html;
+    }
+
+    function renderWorkflows() {
+      var canvas = document.getElementById('workflowCanvas');
+      if (workflows.length === 0) {
+        canvas.innerHTML = '<p style="color:#888;text-align:center;margin-top:200px;">Drag nodes here to build workflow</p>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < workflows.length; i++) {
+        var w = workflows[i];
+        html += '<div class="governance-section" style="margin-bottom:15px;"><div class="governance-title">' + w.name + '</div><div style="color:#888;font-size:13px;">' + (w.description || 'No description') + '</div><div style="margin-top:10px;"><span class="status-badge ' + w.status + '">' + w.status + '</span><span style="color:#888;font-size:12px;margin-left:10px;">Runs: ' + w.runs + '</span></div></div>';
+      }
+      canvas.innerHTML = html;
+    }
+
+    function renderAuditLog() {
+      var log = document.getElementById('auditLog');
+      if (auditLogs.length === 0) {
+        log.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">No audit logs yet.</p>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < auditLogs.length; i++) {
+        var entry = auditLogs[i];
+        html += '<div class="audit-entry ' + entry.status + '"><div class="audit-header"><span class="audit-action">' + entry.action + '</span><span class="audit-time">' + new Date(entry.timestamp).toLocaleString() + '</span></div><div style="margin-bottom:5px;"><span class="audit-agent">' + (entry.agentId || 'System') + '</span> - ' + (entry.details || '') + '</div>' + (entry.reason ? '<div class="audit-details">' + entry.reason + '</div>' : '') + '</div>';
+      }
+      log.innerHTML = html;
+    }
+
+    function renderPermissions() {
+      var grid = document.getElementById('permissionGrid');
+      var perms = [
+        { name: 'file_read', desc: 'Read files from allowed directories', enabled: true },
+        { name: 'file_write', desc: 'Create or modify files', enabled: true },
+        { name: 'execute_commands', desc: 'Run shell commands on host OS', enabled: false },
+        { name: 'network_access', desc: 'Make external network requests', enabled: true },
+        { name: 'registry_access', desc: 'Modify system registry (Windows)', enabled: false },
+        { name: 'install_software', desc: 'Install applications on host', enabled: false }
+      ];
+      var html = '';
+      for (var i = 0; i < perms.length; i++) {
+        var p = perms[i];
+        html += '<div class="permission-row"><div><div class="permission-name">' + p.name.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) + '</div><div class="permission-desc">' + p.desc + '</div></div><div class="toggle ' + (p.enabled ? 'active' : '') + '" onclick="this.classList.toggle(\'active\')"></div></div>';
+      }
+      grid.innerHTML = html;
+    }
+
+    function updateStats() {
+      document.getElementById('statAgents').textContent = stats.agents.active;
+      document.getElementById('statWorkflows').textContent = stats.workflows.running;
+      document.getElementById('statApiCalls').textContent = stats.apiCalls;
+      document.getElementById('statBlocked').textContent = stats.blocked;
+      document.getElementById('apiLimitDesc').textContent = stats.apiCalls + ' of 1000 used';
+      document.getElementById('apiRateFill').style.width = Math.min(100, stats.apiCalls / 10) + '%';
+    }
+
+    // Agent Actions
+    function handleAddAgent() {
+      var name = document.getElementById('newAgentName').value;
+      var type = document.getElementById('newAgentType').value;
+      var desc = document.getElementById('newAgentDesc').value;
+      if (!name) { alert('Please enter an agent name'); return; }
+
+      agents.push({
+        id: String(Date.now()),
+        name: name,
+        type: type,
+        status: 'idle',
+        tasksCompleted: 0,
+        errors: 0,
+        lastActivity: null
+      });
+
+      renderAgents();
+      updateStats();
+      closeModal('addAgent');
+      document.getElementById('newAgentName').value = '';
+      document.getElementById('newAgentDesc').value = '';
+    }
+
+    function toggleAgent(id) {
+      for (var i = 0; i < agents.length; i++) {
+        if (agents[i].id === id) {
+          agents[i].status = agents[i].status === 'active' ? 'idle' : 'active';
+          break;
+        }
+      }
+      renderAgents();
+      updateStats();
+    }
+
+    function deleteAgent(id) {
+      if (!confirm('Are you sure you want to delete this agent?')) return;
+      var newAgents = [];
+      for (var i = 0; i < agents.length; i++) {
+        if (agents[i].id !== id) newAgents.push(agents[i]);
+      }
+      agents = newAgents;
+      renderAgents();
+      updateStats();
+    }
+
+    function viewAgentLogs(id) {
+      var agentLogs = [];
+      for (var i = 0; i < auditLogs.length; i++) {
+        if (auditLogs[i].agentId === id) agentLogs.push(auditLogs[i]);
+      }
+      if (agentLogs.length === 0) { alert('No logs for this agent'); return; }
+      var msg = 'Agent Logs:\n';
+      for (var i = 0; i < agentLogs.length; i++) {
+        msg += '\n' + auditLogs[i].action + ' - ' + auditLogs[i].status;
+      }
+      alert(msg);
+    }
+
+    // Workflow
+    function handleAddWorkflow() {
+      var name = document.getElementById('newWorkflowName').value;
+      var desc = document.getElementById('newWorkflowDesc').value;
+      if (!name) { alert('Please enter a workflow name'); return; }
+
+      workflows.push({
+        id: 'wf' + Date.now(),
+        name: name,
+        description: desc,
+        status: 'draft',
+        runs: 0
+      });
+
+      renderWorkflows();
+      closeModal('newWorkflow');
+      document.getElementById('newWorkflowName').value = '';
+      document.getElementById('newWorkflowDesc').value = '';
+    }
+
+    // Modal
+    function openModal(id) { document.getElementById(id + 'Modal').classList.add('active'); }
+    function closeModal(id) { document.getElementById(id + 'Modal').classList.remove('active'); }
+  </script>
+</body>
+</html>

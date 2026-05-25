@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.agentos.launcher</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>/Applications/AgentOS/server.js</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/Shared/agentos/logs/stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/Shared/agentos/logs/stderr.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Applications/AgentOS</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>Label</key>
+    <string>com.agentos.agent</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/node</string>
+        <string>/Applications/AgentOS/server.js</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/Shared/agentos/logs/stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/Shared/agentos/logs/stderr.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Applications/AgentOS</string>
+</dict>
+</plist>
